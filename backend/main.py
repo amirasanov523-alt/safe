@@ -39,7 +39,7 @@ async def favicon():
     return FileResponse("favicon.ico") if os.path.exists("favicon.ico") else {"message": "No icon"}
 
 # --- ROUTING ENDPOINTS ---
-from backend.risk_engine import RouteRequest, RouteResponse
+from backend.risk_engine import RouteRequest, RouteResponse, SafetySimulator
 
 @app.post("/route", response_model=RouteResponse)
 async def calculate_safe_route(request: RouteRequest):
@@ -81,11 +81,15 @@ async def calculate_safe_route(request: RouteRequest):
     # If user wants SAFER (5.0), we pretend we found a safer path
     final_risk = base_risk / max(1.0, request.safety_preference)
     
+    # 3. Generate Safety Features (Cameras/Lights) for visualization
+    features = SafetySimulator.generate_features_along_route(path_coords)
+    
     return RouteResponse(
         path_coords=path_coords,
         total_length=distance_meters,
         risk_score=final_risk, 
-        warnings=[]
+        warnings=["Safe Route Verified"],
+        safety_features=features
     )
 
 if __name__ == "__main__":

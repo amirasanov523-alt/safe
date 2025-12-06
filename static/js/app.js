@@ -112,13 +112,17 @@ async function buildRoute() {
         // Draw Route
         drawPolyline(data.path_coords);
 
+        // Draw Safety Features
+        drawSafetyFeatures(data.safety_features);
+
         // Show Stats
         document.getElementById('stat-dist').innerText = (data.total_length / 1000).toFixed(2) + ' km';
         document.getElementById('stat-risk').innerText = data.risk_score.toFixed(1);
         document.getElementById('route-stats').classList.remove('hidden');
 
     } catch (e) {
-        alert("Error calculating route: " + e);
+        alert("Error: " + e);
+        console.error(e);
     } finally {
         btn.innerText = "Build Safe Route";
         btn.disabled = false;
@@ -138,6 +142,36 @@ function drawPolyline(coords) {
     }).addTo(map);
 
     map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+}
+
+function drawSafetyFeatures(features) {
+    if (!features) return;
+
+    features.forEach(f => {
+        let color = '#00ff00'; // Default Green (Safe)
+        if (f.type === 'cctv') color = '#00f0ff'; // Cyan
+        if (f.type === 'light') color = '#ffd700'; // Gold
+
+        const iconHtml = `
+            <div style="
+                background-color: ${color};
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                box-shadow: 0 0 8px ${color};
+            "></div>
+        `;
+
+        const icon = L.divIcon({
+            className: 'safety-icon',
+            html: iconHtml,
+            iconSize: [10, 10]
+        });
+
+        L.marker([f.lat, f.lon], { icon: icon })
+            .bindPopup(`<b>${f.description}</b>`)
+            .addTo(map);
+    });
 }
 
 // Event Listeners

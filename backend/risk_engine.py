@@ -1,58 +1,58 @@
-import math
-from typing import Dict, List, Optional
-from dataclasses import dataclass
 from pydantic import BaseModel
+from typing import List
+import random
+import math
 
-# --- API Models ---
 class RouteRequest(BaseModel):
     start_lat: float
     start_lon: float
     end_lat: float
     end_lon: float
-    safety_preference: float = 1.0  # 0.0 (Fastest) to 5.0 (Safest)
+    safety_preference: float = 1.0 
+
+class SafetyFeature(BaseModel):
+    type: str # 'cctv', 'police', 'light'
+    lat: float
+    lon: float
+    description: str
 
 class RouteResponse(BaseModel):
-    path_coords: List[List[float]] # [[lat, lon], ...]
+    path_coords: List[List[float]]
     total_length: float
     risk_score: float
     warnings: List[str]
+    safety_features: List[SafetyFeature] = [] # New: Return map markers
 
-# --- Core Logic ---
-@dataclass
-class RoadSegment:
-    id: int
-    length_meters: float
-    road_type: str 
-    lighting_level: float 
-    crime_count_near: int
-    has_surveillance: bool
+class SafetySimulator:
+    """
+    Since we don't have real-time police data yet,
+    this class simulates 'Safe Zones' for the demo.
+    """
     
-class RiskModel:
-    def __init__(self):
-        self.weights = {
-            'lighting': 0.4,
-            'crime': 0.5,
-            'road_type': 0.1
-        }
-        self.road_type_risk = {
-            'primary': 0.2,
-            'residential': 0.4,
-            'park': 0.6,
-            'alley': 0.9
-        }
-
-    def normalize(self, value: float, min_v: float, max_v: float) -> float:
-        return max(0.0, min(1.0, (value - min_v) / (max_v - min_v)))
-
-    def calculate_segment_risk(self, segment: RoadSegment) -> float:
-        lighting_risk = 1.0 - segment.lighting_level
-        crime_risk = self.normalize(segment.crime_count_near, 0, 10)
-        type_risk = self.road_type_risk.get(segment.road_type, 0.5)
-        cam_modifier = 0.8 if segment.has_surveillance else 1.0
+    @staticmethod
+    def generate_features_along_route(path: List[List[float]]) -> List[SafetyFeature]:
+        features = []
+        # Every ~10 points, maybe add a camera
+        step = max(1, len(path) // 5) 
         
-        raw_score = (
-            (lighting_risk * self.weights['lighting']) +
-            (crime_risk * self.weights['crime']) +
-            (type_risk * self.weights['road_type'])
-        ) * cam_modifier
-        return round(raw_score * 100, 2)
+        for i in range(0, len(path), step):
+            if random.random() > 0.3: # 70% chance of feature
+                coord = path[i]
+                
+                # Randomly pick a safety feature
+                f_type = random.choice(['cctv', 'light', 'police'])
+                
+                if f_type == 'cctv':
+                    desc = "Smart City Camera (FaceID)"
+                elif f_type == 'light':
+                    desc = "LED Street Light (High Visibility)"
+                else: 
+                    desc = "Police Petrol Station"
+                    
+                features.append(SafetyFeature(
+                    type=f_type,
+                    lat=coord[0],
+                    lon=coord[1],
+                    description=desc
+                ))
+        return features
