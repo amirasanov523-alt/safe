@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeRoute AI</title>
+
+    <!-- Leaflet CSS (The Map) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <!-- Google Fonts (Premium Typography) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar Controls -->
+        <aside class="sidebar">
+            <div class="brand">
+                <h1>SafeRoute <span class="accent">AI</span></h1>
+                <p>Safety-First Navigation</p>
+            </div>
+
+            <div class="controls">
+                <div class="input-group">
+                    <label>Start Point</label>
+                    <div class="location-input" id="start-loc">Click on Map</div>
+                </div>
+
+                <div class="input-group">
+                    <label>Destination</label>
+                    <div class="location-input" id="end-loc">Click on Map</div>
+                </div>
+
+                <div class="input-group">
+                    <label>Safety Priority</label>
+                    <input type="range" min="0" max="5" step="1" value="3" class="slider" id="risk-slider">
+                    <div class="slider-labels">
+                        <span>Fastest</span>
+                        <span>Safest</span>
+                    </div>
+                </div>
+
+                <button id="build-route-btn" class="primary-btn" disabled>Build Safe Route</button>
+            </div>
+
+            <div class="stats hidden" id="route-stats">
+                <div class="stat-item">
+                    <span class="label">Distance</span>
+                    <span class="value" id="stat-dist">0 km</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Risk Score</span>
+                    <span class="value" id="stat-risk">0</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- The Map -->
+        <div id="map"></div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="/static/js/app.js"></script>
+</body>
+
+</html>
