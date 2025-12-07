@@ -7,14 +7,40 @@ let routeLine = null;
 // Initialize Map
 function initMap() {
     // Center on Bishkek, Kyrgyzstan
-    map = L.map('map').setView([42.8746, 74.5698], 13);
-
-    // Dark Matter Tiles (Premium Look, Free)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    // Base Layers
+    // Base Layers
+    // 1. HD Navigation (CartoDB Voyager) - Clean, fast, sharp
+    const voyagerLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap &copy; CartoDB',
         subdomains: 'abcd',
-        maxZoom: 19
-    }).addTo(map);
+        maxZoom: 20,
+        detectRetina: false // Turned off due to loading issues (black tiles)
+    });
+
+    // 2. Dark Mode (CartoDB Dark Matter)
+    const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CartoDB',
+        subdomains: 'abcd',
+        maxZoom: 20,
+        detectRetina: false
+    });
+
+    // Initialize Map with HD Navigation by default
+    map = L.map('map', {
+        center: [42.8746, 74.5698],
+        zoom: 13,
+        zoomControl: false, // We'll add it in a better spot if needed, or keep default
+        layers: [voyagerLayer]
+    });
+
+    // Layer Control
+    const baseMaps = {
+        "HD Navigation (Clear)": voyagerLayer,
+        "Dark Mode (Night)": darkLayer
+    };
+
+    L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
+    L.control.zoom({ position: 'bottomright' }).addTo(map); // Move zoom to bottom right so it doesn't overlap controls
 
     // Click Handlers
     map.on('click', handleMapClick);
@@ -174,6 +200,86 @@ function drawSafetyFeatures(features) {
     });
 }
 
+// Geolocation
+// Geolocation
+function locateUser() {
+    const btn = document.getElementById('locate-btn');
+    const originalText = btn.innerHTML;
+
+    btn.innerHTML = '⌛ Finding...';
+    btn.disabled = true;
+
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser");
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        return;
+    }
+
+    const options = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+    };
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy; // Accuracy in meters
+
+            // Fly to location
+            map.flyTo([lat, lng], 15);
+
+            // Remove old accuracy circle if exists
+            if (window.userAccuracyCircle) {
+                map.removeLayer(window.userAccuracyCircle);
+            }
+
+            // Draw Accuracy Circle
+            window.userAccuracyCircle = L.circle([lat, lng], {
+                radius: accuracy,
+                color: '#00f0ff',
+                fillColor: '#00f0ff',
+                fillOpacity: 0.15,
+                weight: 1
+            }).addTo(map);
+
+            // Add Marker
+            L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'user-location-marker',
+                    html: '<div style="background-color: #00f0ff; width: 14px; height: 14px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 15px #00f0ff;"></div>',
+                    iconSize: [20, 20]
+                })
+            }).addTo(map)
+                .bindPopup(`<b>You are approximately here</b><br>Accuracy: within ${Math.round(accuracy)} meters`)
+                .openPopup();
+
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        },
+        (err) => {
+            console.warn(`ERROR(${err.code}): ${err.message}`);
+            let msg = "Unable to retrieve your location.";
+
+            if (err.code === 1) { // PERMISSION_DENIED
+                msg = "Permission denied. Please allow location access in your browser settings.";
+            } else if (err.code === 2) { // POSITION_UNAVAILABLE
+                msg = "Location unavailable. Ensure your OS location services are on.";
+            } else if (err.code === 3) { // TIMEOUT
+                msg = "Location request timed out. Please try again.";
+            }
+
+            alert(msg);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        },
+        options
+    );
+}
+
 // Event Listeners
 document.addEventListener('DOMContentLoaded', initMap);
 document.getElementById('build-route-btn').addEventListener('click', buildRoute);
+document.getElementById('locate-btn').addEventListener('click', locateUser);
